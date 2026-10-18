@@ -278,6 +278,18 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #b7
 @media(max-width:600px){#ivan-field-terminal .world{height:740px}#ivan-field-terminal .hero{top:155px;left:22px;max-width:calc(100% - 44px)}#ivan-field-terminal .hero h1{font-size:48px;letter-spacing:-4px}#ivan-field-terminal .hero .eyebrow{font-size:10px}#ivan-field-terminal .caption{top:425px;font-size:9px}#ivan-field-terminal .reed .p1{left:44px;top:76%}#ivan-field-terminal .section-bar h2{font-size:23px}#ivan-field-terminal .section-bar .aside-label{font-size:9px}#ivan-field-terminal .closing p{font-size:21px}}
 </style>
 
+<style>
+/* A viewport-sized landscape shared by the entire archive. */
+#ivan-field-terminal{position:relative;isolation:isolate;overflow:visible;background:transparent;border-radius:0}
+#ivan-field-terminal .world{isolation:auto;overflow:visible;background:transparent;height:max(740px,100svh)}
+#ivan-field-terminal canvas.land{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:-2;pointer-events:none;background:#050a07}
+#ivan-field-terminal .world:after{position:fixed;z-index:-1;background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,#00000017 4px),radial-gradient(ellipse at center,transparent 30%,#03080588 100%)}
+#ivan-field-terminal .resume{background:linear-gradient(90deg,#050a0766,#050a07d9 16%,#050a07d9 84%,#050a0766)}
+#ivan-field-terminal .period{text-shadow:0 1px 5px #050a07,0 0 12px #050a07}
+#ivan-field-terminal .pause{position:fixed;right:22px;bottom:20px;z-index:10;background:#060d08ed}
+#ivan-field-terminal .bottom{padding-right:80px}
+@media(max-width:600px){#ivan-field-terminal .resume{background:#050a07bf}#ivan-field-terminal .pause{right:12px;bottom:12px}}
+</style>
 <script>
 (()=>{
  const root=document.getElementById('ivan-field-terminal');
@@ -294,15 +306,15 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #b7
   const s={el,canvas,ctx,kind,config,w:0,h:0,t:0,paused:reduced,mouse:{x:-1000,y:-1000},cells:[],waves:[],lastDrop:0,objectCanvas:null,objectPhase:0,work:0};states.push(s);
   const pause=el.querySelector('.pause');pause.textContent=s.paused?'Resume':'Pause';
   pause.onclick=()=>{s.paused=!s.paused;pause.textContent=s.paused?'Resume':'Pause';persist()};
-  function resize(){const r=el.getBoundingClientRect();if(!r.width)return;const dpr=Math.min(devicePixelRatio||1,2);s.w=r.width;s.h=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);s.cells=[];s.gx=kind==='grass'?7:11;s.gy=kind==='grass'?10:14;s.cols=Math.ceil(s.w/s.gx);s.rows=Math.ceil(s.h/s.gy);s.a=new Float32Array(s.cols*s.rows);s.b=new Float32Array(s.cols*s.rows);s.c=new Float32Array(s.cols*s.rows);
+  function resize(){const r=canvas.getBoundingClientRect();if(!r.width)return;const dpr=Math.min(devicePixelRatio||1,2);s.w=r.width;s.h=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);s.cells=[];const spacing=Math.max(1,Math.sqrt(s.w*s.h/(70*22000)));s.gx=kind==='grass'?7*spacing:11;s.gy=kind==='grass'?10*spacing:14;s.cols=Math.ceil(s.w/s.gx);s.rows=Math.ceil(s.h/s.gy);s.a=new Float32Array(s.cols*s.rows);s.b=new Float32Array(s.cols*s.rows);s.c=new Float32Array(s.cols*s.rows);
    if(kind==='magnet'){for(let i=0;i<1500;i++){let z=1-2*(i+.5)/1500,r=Math.sqrt(1-z*z),phi=i*2.399963;s.cells.push({sx:r*Math.cos(phi),sy:z,sz:r*Math.sin(phi),x:s.w*.69,y:s.h*.52,vx:0,vy:0,seed:hash(i,9)});}}
    else{for(let j=0;j<s.rows;j++)for(let i=0;i<s.cols;i++){let u=i/s.cols,v=j/s.rows,h=height(u*1.5,v*1.2),x=i*s.gx+s.gx/2,y=j*s.gy+s.gy/2;const r=riverAt(u,v,s.w,s.h);s.cells.push({x,y,u,v,h,dx:0,dy:0,vx:0,vy:0,seed:hash(i,j),r});}}
    if(kind==='water'){drop(s.w*.68,s.h*.46,3)}draw(s,0,true);
   }
   function drop(x,y,power){let i=Math.round(x/11),j=Math.round(y/14);for(let oy=-2;oy<=2;oy++)for(let ox=-2;ox<=2;ox++){let xx=i+ox,yy=j+oy;if(xx>0&&xx<s.cols-1&&yy>0&&yy<s.rows-1)s.a[yy*s.cols+xx]+=power*Math.exp(-(ox*ox+oy*oy)/2);}}
-  canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();s.mouse.x=e.clientX-r.left;s.mouse.y=e.clientY-r.top;if(kind==='grass'&&!s.paused&&s.t-s.lastDrop>.12){const river=riverAt(s.mouse.x/s.w,s.mouse.y/s.h,s.w,s.h);if(river.distance<river.width*config.riverWidth){s.waves.push({x:s.mouse.x,y:s.mouse.y,t:s.t,water:true,power:.4});s.waves=s.waves.slice(-20);s.lastDrop=s.t}}if(kind==='water'&&!s.paused&&s.t-s.lastDrop>.06){drop(s.mouse.x,s.mouse.y,.9);s.lastDrop=s.t}if(s.paused)draw(s,0,true)});
-  canvas.addEventListener('pointerleave',()=>{s.mouse.x=-1000;s.mouse.y=-1000});
-  canvas.addEventListener('pointerdown',e=>{let r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;s.mouse.x=x;s.mouse.y=y;
+  document.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();s.mouse.x=e.clientX-r.left;s.mouse.y=e.clientY-r.top;if(kind==='grass'&&!s.paused&&s.t-s.lastDrop>.12){const river=riverAt(s.mouse.x/s.w,s.mouse.y/s.h,s.w,s.h);if(river.distance<river.width*config.riverWidth){s.waves.push({x:s.mouse.x,y:s.mouse.y,t:s.t,water:true,power:.4});s.waves=s.waves.slice(-20);s.lastDrop=s.t}}if(kind==='water'&&!s.paused&&s.t-s.lastDrop>.06){drop(s.mouse.x,s.mouse.y,.9);s.lastDrop=s.t}if(s.paused)draw(s,0,true)});
+  document.documentElement.addEventListener('pointerleave',()=>{s.mouse.x=-1000;s.mouse.y=-1000});
+  document.addEventListener('pointerdown',e=>{if(e.target.closest('a,button,summary,input,textarea,select,.drawer')||s.paused)return;let r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;s.mouse.x=x;s.mouse.y=y;
    if(s.paused){s.paused=false;pause.textContent='Pause'}
    if(kind==='water')drop(x,y,6);
    if(kind==='grass'||kind==='terrain'){let r=riverAt(x/s.w,y/s.h,s.w,s.h);s.waves.push({x,y,t:s.t,water:r.distance<r.width*config.riverWidth,power:1});s.waves=s.waves.slice(-20);}
@@ -315,8 +327,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #b7
    dr.hidden=false;dr.querySelector('.close').onclick=()=>{dr.hidden=true;s.objectCanvas=null;btn.focus()};s.objectCanvas=dr.querySelector('canvas');s.objectCanvas.width=600;s.objectCanvas.height=350;s.objectPhase=0;drawObject(s);dr.querySelector('.close').focus();persist();
   });
   el.addEventListener('keydown',e=>{if(e.key==='Escape'){const dr=el.querySelector('.drawer');if(!dr.hidden)dr.querySelector('.close').click()}});
-  new ResizeObserver(resize).observe(el);resize();
-  s.visible=true;if(typeof IntersectionObserver!=='undefined')new IntersectionObserver(entries=>{s.visible=entries[0].isIntersecting},{rootMargin:'100px'}).observe(el);
+  new ResizeObserver(resize).observe(canvas);resize();
+  s.visible=true;
   if(globalThis.Tweak){let tweak=new Tweak({container:el,onChange:()=>draw(s,0,true)});tweak.addSlider(config,'density',{label:'Grass density',min:.35,max:1,step:.05});tweak.addSlider(config,'wind',{label:'Wind',min:0,max:1.5,step:.05});tweak.addSlider(config,'elasticity',{label:'Stem elasticity',min:.15,max:1.5,step:.05});tweak.addSlider(config,'flow',{label:'Flow speed',min:0,max:2,step:.05});tweak.addSlider(config,'riverWidth',{label:'River width',min:.5,max:1.7,step:.05});}
  });
  function riverAt(u,v,w,h){
